@@ -32,22 +32,26 @@ fn handle_connection(mut stream: TcpStream) {
             println!("{} bytes read", bytes_read);
             let request_parts: Vec<&str> = request.split_whitespace().collect();
             // let http_method = request_parts.get(0).unwrap_or(&"");
-            let http_path = request_parts.get(1).unwrap_or(&"");
-            if http_path.to_string() == "/" {
-                match stream.write(b"HTTP/1.1 200 OK\r\n\r\n") {
-                    Ok(_bytes_written) => println!("HTTP 200 OK"),
-                    Err(error) => {
-                        println!("error writing to stream: {}", error);
-                    }
-                };
-            } else {
-                match stream.write(b"HTTP/1.1 404 Not Found\r\n\r\n") {
-                    Ok(_bytes_written) =>println!("HTTP 404 Not found"),
-                    Err(error) => {
-                        println!("error writing to stream: {}", error);
-                    }
-                };
-            }
+            let http_path = request_parts.get(1).unwrap_or(&"").to_string();
+            let params = http_path.splitn(3, '/').last();
+           
+            let body = match params {
+                Some(params) => {
+                    let content = params.to_string();
+                    format!("HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
+                },
+                None => {
+                    String::from("HTTP/1.1 404 Not Found\r\n\r\n")
+                }
+            };
+            
+             // Write the response to the stream
+             match stream.write(body.as_bytes()) {
+                Ok(_bytes_written) => println!("HTTP 200 OK"),
+                Err(error) => {
+                    println!("error writing to stream: {}", error);
+                }
+            };
         }
         Err(error) => {
             println!("error reading from stream: {}", error);
