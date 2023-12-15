@@ -36,7 +36,8 @@ fn handle_connection(mut stream: TcpStream) {
             let params = http_path.splitn(1, '/').last();
 
            let body = match http_path.as_str() {
-            path if path.starts_with("/echo") =>  match params {
+            "/" =>  format!("HTTP/1.1 200 Not Found\r\n\r\n"),
+            path if path.starts_with("/") =>  match params {
                 Some(params) => {                    
                     let content = params.to_string();
                     print!("content {}",content);
