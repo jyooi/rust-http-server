@@ -37,7 +37,16 @@ fn handle_connection(mut stream: TcpStream) {
            
             let body = match params {
                 Some(params) => {
+
+                    // assume return 404 when receive favicon.ico
+                     if params == "favicon.ico" {
+                        format!("HTTP/1.1 404 Not Found\r\n\r\n");
+                        return;
+                     }
+
+                    
                     let content = params.to_string();
+                    print!("content {}",content);
                     format!("HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
                 },
                 None => {
