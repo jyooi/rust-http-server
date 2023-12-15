@@ -41,7 +41,7 @@ fn handle_connection(mut stream: TcpStream) {
                 Some(params) => {                    
                     let content = params.to_string();
                     print!("content {}",content);
-                    format!("HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
+                    format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
                 },
                 None => {
                     String::from("HTTP/1.1 404 Not Found\r\n\r\n")
