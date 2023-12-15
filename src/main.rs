@@ -33,21 +33,21 @@ fn handle_connection(mut stream: TcpStream) {
             let request_parts: Vec<&str> = request.split_whitespace().collect();
             // let http_method = request_parts.get(0).unwrap_or(&"");
             let http_path = request_parts.get(1).unwrap_or(&"").to_string();
-            let params = http_path.splitn(3, '/').last();
+            let params = http_path.splitn(1, '/').last();
 
-            let body = match http_path.as_str() {
-                path if path.starts_with("/") =>  match params {
-                    Some(params) => {                    
-                        let content = params.to_string();
-                        print!("content {}",content);
-                        format!("HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
-                    },
-                    None => {
-                        String::from("HTTP/1.1 404 Not Found\r\n\r\n")
-                    }
+           let body = match http_path.as_str() {
+            path if path.starts_with("/echo") =>  match params {
+                Some(params) => {                    
+                    let content = params.to_string();
+                    print!("content {}",content);
+                    format!("HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
                 },
-                _ =>  format!("HTTP/1.1 404 Not Found\r\n\r\n"),
-            };
+                None => {
+                    String::from("HTTP/1.1 404 Not Found\r\n\r\n")
+                }
+            },
+            _ =>  format!("HTTP/1.1 404 Not Found\r\n\r\n"),
+        };
            
            
              match stream.write(body.as_bytes()) {
