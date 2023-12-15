@@ -34,27 +34,22 @@ fn handle_connection(mut stream: TcpStream) {
             // let http_method = request_parts.get(0).unwrap_or(&"");
             let http_path = request_parts.get(1).unwrap_or(&"").to_string();
             let params = http_path.splitn(3, '/').last();
-           
-            let body = match params {
-                Some(params) => {
 
-                    // assume return 404 when receive favicon.ico
-                     if params == "favicon.ico" {
-                        format!("HTTP/1.1 404 Not Found\r\n\r\n");
-                        return;
-                     }
-
-                    
-                    let content = params.to_string();
-                    print!("content {}",content);
-                    format!("HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
+            let body = match http_path.as_str() {
+                path if path.starts_with("/") =>  match params {
+                    Some(params) => {                    
+                        let content = params.to_string();
+                        print!("content {}",content);
+                        format!("HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
+                    },
+                    None => {
+                        String::from("HTTP/1.1 404 Not Found\r\n\r\n")
+                    }
                 },
-                None => {
-                    String::from("HTTP/1.1 404 Not Found\r\n\r\n")
-                }
+                _ =>  format!("HTTP/1.1 404 Not Found\r\n\r\n"),
             };
-            
-             // Write the response to the stream
+           
+           
              match stream.write(body.as_bytes()) {
                 Ok(_bytes_written) => println!("HTTP 200 OK"),
                 Err(error) => {
