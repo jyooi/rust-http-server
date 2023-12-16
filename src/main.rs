@@ -5,21 +5,20 @@ use std::{
     net::{TcpListener, TcpStream}, collections::HashMap,
 };
 
+use std::thread;
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     println!("Logs from your program will appear here!");
 
     // Uncomment this block to pass the first stage
 
-    let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
-
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
     for stream in listener.incoming() {
-        match stream {
-            Ok(_stream) => handle_connection(_stream),
-            Err(e) => {
-                println!("error: {}", e);
-            }
-        }
+        let stream = stream.unwrap();
+
+        thread::spawn(|| { // Spawn a new thread for each connection
+            handle_connection(stream);
+        });
     }
 }
 
@@ -31,7 +30,6 @@ fn handle_connection(mut stream: TcpStream) {
         Ok(bytes_read) => {
             println!("{} bytes read", bytes_read);
             let request_parts: Vec<&str> = request.split_whitespace().collect();
-            // let http_method = request_parts.get(0).unwrap_or(&"");
             let http_path = request_parts.get(1).unwrap_or(&"").to_string();
             let params = http_path.splitn(3, '/').last();
 
