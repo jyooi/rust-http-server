@@ -2,7 +2,7 @@
 
 use std::{
     io::{BufRead, BufReader, Write},
-    net::{TcpListener, TcpStream},
+    net::{TcpListener, TcpStream}, collections::HashMap,
 };
 
 fn main() {
@@ -42,6 +42,37 @@ fn handle_connection(mut stream: TcpStream) {
                     let content = params.to_string();
                     print!("content {}",content);
                     format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
+                },
+                None => {
+                    String::from("HTTP/1.1 404 Not Found\r\n\r\n")
+                }
+            },
+            path if path.starts_with("/user-agent") => match params {
+                Some(params) => {          
+                    let mut headers = HashMap::new();
+                        loop {
+                            let mut line = String::new();
+                            match reader.read_line(&mut line) {
+                                Ok(bytes_read) => {
+                                    if bytes_read == 0 || line == "\r\n" {
+                                        break;
+                                    }
+                                    let parts: Vec<&str> = line.splitn(2, ':').collect();
+                                    if parts.len() == 2 {
+                                        headers.insert(parts[0].trim().to_string(), parts[1].trim().to_string());
+                                    }
+                                },
+                                Err(error) => {
+                                    println!("error reading from stream: {}", error);
+                                    return;
+                                }
+                            };
+                        }
+                    let default_agent = "Unknown User-Agent".to_string();
+                    let user_agent = headers.get("User-Agent").unwrap_or(&default_agent);
+                    let content = params.to_string();
+                    print!("content {}",content);
+                    format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", content.len(), user_agent)
                 },
                 None => {
                     String::from("HTTP/1.1 404 Not Found\r\n\r\n")
