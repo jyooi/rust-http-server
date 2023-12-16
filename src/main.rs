@@ -87,14 +87,31 @@ fn handle_connection(mut stream: TcpStream, directory: String) {
                 match method {
                     "POST" => {
                         let filename = &path[7..];
-                        print!("{}",filename);
                         let filepath = format!("{}/{}", directory, filename);
-                        std::fs::create_dir_all(directory).unwrap(); // Ensure the directory exists
-                        let mut file = std::fs::File::create(filepath).unwrap();
-                        let mut body = Vec::new();
-                        reader.read_to_end(&mut body).unwrap();
-                        file.write_all(&body).unwrap();
-                        format!("HTTP/1.1 201 Created\r\n\r\n")
+                        std::fs::create_dir_all(&directory).unwrap_or_else(|e| {
+                            println!("Failed to create directory: {}", e);
+                        });
+
+                        match std::fs::File::create(&filepath) {
+                            Ok(mut file) => {
+                                let mut body = Vec::new();
+                                if let Err(e) = reader.read_to_end(&mut body) {
+                                    println!("Error reading from stream: {}", e);
+                                    return;
+                                }
+
+                                if let Err(e) = file.write_all(&body) {
+                                    println!("Error writing to file: {}", e);
+                                    return;
+                                }
+
+                                format!("HTTP/1.1 201 Created\r\n\r\n")
+                            },
+                            Err(e) => {
+                                println!("Error creating file: {}", e);
+                                format!("HTTP/1.1 500 Internal Server Error\r\n\r\n")
+                            }
+                        }
                     },
                     "GET" => {
                         let filename = &path[7..];
