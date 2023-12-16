@@ -7,26 +7,28 @@ use std::{
 use std::env;
 use std::fs;
 use std::thread;
+
 fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    println!("Logs from your program will appear here!");
-
-    
-
     let args: Vec<String> = env::args().collect();
-    let directory = &args[1]; // Get the directory from the command-line arguments
+
+    let mut directory = "default_directory";
+    for i in 0..args.len() {
+        if args[i] == "--directory" && i + 1 < args.len() {
+            directory = &args[i + 1];
+            break;
+        }
+    }
 
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        let directory = directory.clone();
+        let directory = directory.to_string();
 
         thread::spawn(move || { // Spawn a new thread for each connection
             handle_connection(stream, directory);
         });
     }
 }
-
 fn handle_connection(mut stream: TcpStream, directory: String) {
     let mut reader = BufReader::new(&mut stream);
 
