@@ -1,7 +1,7 @@
 // Uncomment this block to pass the first stage
 
 use std::{
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader, Write, Read},
     net::{TcpListener, TcpStream}, collections::HashMap,
 };
 use std::env;
@@ -39,7 +39,10 @@ fn handle_connection(mut stream: TcpStream, directory: String) {
             let request_parts: Vec<&str> = request.split_whitespace().collect();
             let http_path = request_parts.get(1).unwrap_or(&"").to_string();
             let params = http_path.splitn(3, '/').last();
-
+            let request_lines: Vec<&str> = request.split('\n').collect();
+            let request_line = request_lines[0];
+            let parts: Vec<&str> = request_line.split_whitespace().collect();
+            let method = parts[0];
            let body = match http_path.as_str() {
             "/" =>  format!("HTTP/1.1 200 OK\r\n\r\n"),
             path if path.starts_with("/echo/") => match params {
@@ -81,21 +84,34 @@ fn handle_connection(mut stream: TcpStream, directory: String) {
                 }
             },
             path if path.starts_with("/files/") => {
-                let filename = &path[7..];
-                let filepath = format!("{}/{}", directory, filename);
-                match fs::read(&filepath) {
-                    Ok(contents) => {
-                        format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", contents.len(), String::from_utf8_lossy(&contents))
+                match method {
+                    "POST" => {
+                        let filename = &path[7..];
+                        let filepath = format!("{}/{}", directory, filename);
+                        let mut file = std::fs::File::create(filepath).unwrap();
+                        let mut body = Vec::new();
+                        reader.read_to_end(&mut body).unwrap();
+                        file.write_all(&body).unwrap();
+                        format!("HTTP/1.1 201 Created\r\n\r\n")
                     },
-                    Err(_) => {
-                        String::from("HTTP/1.1 404 Not Found\r\n\r\n")
-                    }
+                    "GET" => {
+                        let filename = &path[7..];
+                        let filepath = format!("{}/{}", directory, filename);
+                        match fs::read(&filepath) {
+                            Ok(contents) => {
+                                format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", contents.len(), String::from_utf8_lossy(&contents))
+                            },
+                            Err(_) => {
+                                String::from("HTTP/1.1 404 Not Found\r\n\r\n")
+                            }
+                        }
+                    },
+                    _ =>  format!("HTTP/1.1 405 Method Not Allowed\r\n\r\n"),
                 }
             },
             _ =>  format!("HTTP/1.1 404 Not Found\r\n\r\n"),
         };
-           
-           
+        
              match stream.write(body.as_bytes()) {
                 Ok(_bytes_written) => println!("HTTP 200 OK"),
                 Err(error) => {
