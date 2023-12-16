@@ -4,25 +4,31 @@ use std::{
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream}, collections::HashMap,
 };
-
+use std::env;
+use std::fs;
+use std::io::Read;
 use std::thread;
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     println!("Logs from your program will appear here!");
 
-    // Uncomment this block to pass the first stage
+    
+
+    let args: Vec<String> = env::args().collect();
+    let directory = &args[1]; // Get the directory from the command-line arguments
 
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
     for stream in listener.incoming() {
         let stream = stream.unwrap();
+        let directory = directory.clone();
 
-        thread::spawn(|| { // Spawn a new thread for each connection
-            handle_connection(stream);
+        thread::spawn(move || { // Spawn a new thread for each connection
+            handle_connection(stream, directory);
         });
     }
 }
 
-fn handle_connection(mut stream: TcpStream) {
+fn handle_connection(mut stream: TcpStream, directory: String) {
     let mut reader = BufReader::new(&mut stream);
 
     let mut request = String::new();
@@ -71,6 +77,18 @@ fn handle_connection(mut stream: TcpStream) {
                 },
                 None => {
                     String::from("HTTP/1.1 404 Not Found\r\n\r\n")
+                }
+            },
+            path if path.starts_with("/files/") => {
+                let filename = &path[7..];
+                let filepath = format!("{}/{}", directory, filename);
+                match fs::read(&filepath) {
+                    Ok(contents) => {
+                        format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", contents.len(), String::from_utf8_lossy(&contents))
+                    },
+                    Err(_) => {
+                        String::from("HTTP/1.1 404 Not Found\r\n\r\n")
+                    }
                 }
             },
             _ =>  format!("HTTP/1.1 404 Not Found\r\n\r\n"),
