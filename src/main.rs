@@ -87,7 +87,9 @@ fn handle_connection(mut stream: TcpStream, directory: String) {
                 match method {
                     "POST" => {
                         let filename = &path[7..];
+                        print!("{}",filename);
                         let filepath = format!("{}/{}", directory, filename);
+                        std::fs::create_dir_all(directory).unwrap(); // Ensure the directory exists
                         let mut file = std::fs::File::create(filepath).unwrap();
                         let mut body = Vec::new();
                         reader.read_to_end(&mut body).unwrap();
