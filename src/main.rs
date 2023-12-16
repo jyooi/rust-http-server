@@ -40,7 +40,6 @@ fn handle_connection(mut stream: TcpStream) {
             path if path.starts_with("/echo/") => match params {
                 Some(params) => {                    
                     let content = params.to_string();
-                    print!("content {}",content);
                     format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", content.len(), content)
                 },
                 None => {
@@ -48,7 +47,7 @@ fn handle_connection(mut stream: TcpStream) {
                 }
             },
             path if path.starts_with("/user-agent") => match params {
-                Some(params) => {          
+                Some(_params) => {          
                     let mut headers = HashMap::new();
                         loop {
                             let mut line = String::new();
@@ -70,9 +69,7 @@ fn handle_connection(mut stream: TcpStream) {
                         }
                     let default_agent = "Unknown User-Agent".to_string();
                     let user_agent = headers.get("User-Agent").unwrap_or(&default_agent);
-                    let content = params.to_string();
-                    print!("content {}",content);
-                    format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", content.len(), user_agent)
+                    format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent)
                 },
                 None => {
                     String::from("HTTP/1.1 404 Not Found\r\n\r\n")
